@@ -1,0 +1,37 @@
+version: "3.8"
+
+services:
+  # 1. Servicio de la API (Node.js/Express)
+  api:
+    build: . # Usa el Dockerfile en este directorio
+    container_name: mandados-api
+    restart: always
+    ports:
+      # Mapea el puerto 3000 del contenedor al puerto 3000 de tu PC
+      - "3000:3000"
+    volumes:
+      # Sincroniza el código local con el contenedor para desarrollo
+      - .:/usr/src/app
+      - /usr/src/app/node_modules # Evita sobrescribir node_modules
+    environment:
+      # Variables de entorno que usa server.ts
+      DB_NAME: mandadosdb
+      # Otras variables (JWT_SECRET, etc.)
+    depends_on:
+      - mongodb # Asegura que la DB inicie primero
+
+  # 2. Servicio de la Base de Datos (MongoDB)
+  mongodb:
+    image: mongo:latest # Imagen oficial de MongoDB
+    container_name: mandados-mongodb
+    restart: always
+    ports:
+      # Opcional: Para conectarte con MongoDB Compass desde tu PC
+      - "27017:27017"
+    volumes:
+      # Persistencia de datos: guarda los datos en tu PC
+      - mongo-data:/data/db
+
+# Definición de volúmenes para persistencia
+volumes:
+  mongo-data:

@@ -1,0 +1,30 @@
+{
+	"name": "driver-api",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"dev": "nodemon --exec \"node --loader ts-node/esm src/server.ts\""
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"bcryptjs": "^3.0.3",
+		"dotenv": "^17.2.3",
+		"express": "^5.1.0",
+		"jsonwebtoken": "^9.0.2",
+		"mongoose": "^8.19.3"
+	},
+	"devDependencies": {
+		"@types/bcryptjs": "^3.0.0",
+		"@types/express": "^5.0.5",
+		"@types/jsonwebtoken": "^9.0.10",
+		"@types/node": "^24.10.0",
+		"nodemon": "^3.1.10",
+		"ts-node": "^10.9.2",
+		"typescript": "^5.9.3"
+	},
+	"type": "module"
+}
