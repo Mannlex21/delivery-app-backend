@@ -1,7 +1,7 @@
 // src/utils/auth.utils.ts (Crea este archivo)
 
 import jwt from "jsonwebtoken";
-import { IUser } from "../models/User.model.js";
+import User, { IUser } from "../models/User.model.js";
 import crypto from "crypto";
 import { ENV } from "../config/env.js";
 import { Types } from "mongoose";
@@ -49,4 +49,24 @@ export const generateRefreshToken = async (user: IUser) => {
 
 	await user.save();
 	return tokenValue;
+};
+
+// Asumiendo que el controlador maneja el try...catch para enviar la respuesta HTTP 404/500
+export const getUserInfoById = async (
+	userId: string | undefined
+): Promise<IUser | null> => {
+	// 1. Manejo de usuario no autenticado/no proporcionado
+	if (!userId) {
+		throw new Error("Usuario no autenticado o ID no proporcionado.");
+	}
+
+	// El error de la base de datos (si falla la conexión o la consulta)
+	// se propagará automáticamente al controlador que llamó a esta función.
+	const user = await User.findById(userId).select("-password");
+
+	if (!user) {
+		return null;
+	}
+
+	return user;
 };

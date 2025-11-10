@@ -13,6 +13,9 @@ router.post("/", isAuthenticated, storeController.createStore);
 // GET /stores: Obtener listado de tiendas. SOPORTA BÚSQUEDA GEOSESPACIAL.
 router.get("/", storeController.getStores);
 
+// GET /stores: Obtener listado de tiendas. SOPORTA BÚSQUEDA GEOSESPACIAL.
+router.get("/city", storeController.getStoresByCity);
+
 // GET /stores/my: Obtener la tienda del usuario logueado (si es dueño de una)
 router.get("/my", isAuthenticated, storeController.getMyStore);
 

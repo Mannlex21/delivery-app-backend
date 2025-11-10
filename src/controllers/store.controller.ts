@@ -3,8 +3,8 @@
 import { Request, Response } from "express";
 import { Types } from "mongoose";
 
-import Store, { IStore, IStoreAddress } from "../models/Store.model.js";
-import User from "../models/User.model.js";
+import Store, { IStoreAddress } from "../models/Store.model.js";
+import { getUserInfoById } from "../utils/auth.utils.js";
 
 // Interfaz para el cuerpo de la petición de creación/actualización
 interface IStoreBody {
@@ -27,27 +27,32 @@ export const createStore = async (
 	req: AuthRequest,
 	res: Response
 ): Promise<void> => {
-	const userId = req.user?.userId;
-	const userRole = req.user?.role;
-	const { name, phone, email, address } = req.body as IStoreBody;
-
-	// Control de acceso: Solo roles específicos pueden crear tiendas
-	if (userRole !== "store" && userRole !== "admin") {
-		res.status(403).json({
-			message:
-				"Permiso denegado. Rol no autorizado para crear una tienda.",
-		});
-		return;
-	}
-
-	if (!name || !phone || !email || !address) {
-		res.status(400).json({
-			message: "Faltan campos obligatorios para crear la tienda.",
-		});
-		return;
-	}
-
 	try {
+		const userId = req.user?.userId;
+		const { name, phone, email, address } = req.body as IStoreBody;
+
+		const user = await getUserInfoById(userId);
+		if (!user) {
+			res.status(403).json({
+				message: "No se encontró el usuario",
+			});
+		}
+
+		// Control de acceso: Solo roles específicos pueden crear tiendas
+		if (user && user.role !== "store" && user.role !== "admin") {
+			res.status(403).json({
+				message:
+					"Permiso denegado. Rol no autorizado para crear una tienda.",
+			});
+			return;
+		}
+
+		if (!name || !phone || !email || !address) {
+			res.status(400).json({
+				message: "Faltan campos obligatorios para crear la tienda.",
+			});
+			return;
+		}
 		// Validación de unicidad: Prevenir que un usuario cree múltiples tiendas (opcional)
 		const existingStore = await Store.findOne({
 			owner: new Types.ObjectId(userId),
@@ -111,7 +116,11 @@ export const getStores = async (req: Request, res: Response): Promise<void> => {
 			const lon = parseFloat(longitude as string);
 			const distance = parseInt(maxDistance as string, 10) || 10000; // Por defecto 10 km
 
-			if (isNaN(lat) || isNaN(lon) || isNaN(distance)) {
+			if (
+				Number.isNaN(lat) ||
+				Number.isNaN(lon) ||
+				Number.isNaN(distance)
+			) {
 				res.status(400).json({
 					message: "Coordenadas o distancia no válidas.",
 				});
@@ -153,6 +162,42 @@ export const getStores = async (req: Request, res: Response): Promise<void> => {
 		);
 
 		res.status(200).json(allActiveStores);
+	} catch (error) {
+		console.error("Error al obtener tiendas:", error);
+		res.status(500).json({
+			message: "Error interno del servidor al consultar tiendas.",
+		});
+	}
+};
+
+/**
+ * [GET /stores] Obtiene una lista de tiendas, soportando búsqueda geoespacial o por ciudad.
+ * Query Params: city (string) O (latitude, longitude, maxDistance).
+ */
+export const getStoresByCity = async (
+	req: Request,
+	res: Response
+): Promise<void> => {
+	try {
+		// 1. Obtener todos los parámetros posibles
+		const { city } = req.query;
+
+		// Base de la condición de búsqueda
+		let findQuery: any = { isActive: true };
+		console.log(city);
+		// 2. Manejo de Búsqueda por Ciudad
+		if (city && typeof city === "string") {
+			// Utilizamos una expresión regular para una búsqueda flexible e insensible a mayúsculas/minúsculas
+			findQuery["address.city"] = { $regex: new RegExp(city, "i") };
+		}
+
+		// 4. Búsqueda Simple (por Ciudad o Todas las Activas)
+		// Si no hay parámetros geoespaciales, usamos el findQuery que ya contiene el filtro 'city' si se proporcionó.
+		const filteredStores = await Store.find(findQuery).select(
+			"name address phone email"
+		);
+
+		res.status(200).json(filteredStores);
 	} catch (error) {
 		console.error("Error al obtener tiendas:", error);
 		res.status(500).json({

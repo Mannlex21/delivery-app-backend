@@ -1,15 +1,12 @@
 // src/controllers/auth.controller.ts
 
 import { Request, Response } from "express";
-import jwt from "jsonwebtoken";
 import { Types } from "mongoose"; // Necesario para tipar correctamente los IDs
-
 import User, { IUser } from "../models/User.model.js";
-import { ENV } from "../config/env.js";
 import {
 	createToken,
-	generateAccessToken,
 	generateRefreshToken,
+	getUserInfoById,
 } from "../utils/auth.utils.js";
 
 // --- Función Auxiliar ---
@@ -234,17 +231,11 @@ interface AuthRequest extends Request {
  * [GET /auth/me] Obtiene el perfil completo del usuario logueado.
  */
 export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
-	const userId = req.user?.userId;
-
-	if (!userId) {
-		res.status(401).json({ message: "Usuario no autenticado." });
-		return;
-	}
-
 	try {
+		const userId = req.user?.userId;
 		// Busca al usuario por su ID
 		// Usamos .select('-password') para asegurarnos de que el hash de la contraseña nunca se envíe
-		const user = await User.findById(userId).select("-password");
+		const user = await getUserInfoById(userId);
 
 		if (!user) {
 			res.status(404).json({
